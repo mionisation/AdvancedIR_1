@@ -1,8 +1,6 @@
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -14,6 +12,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -23,23 +22,14 @@ import java.io.IOException;
 public class Main {
     //path to the TREC library, take a small amount for testing purposes
     final static String docsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/fr94/01";
+    final static String topicsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/topicsTREC8Adhoc.txt";
 
     public static void main(String[] args) throws IOException, ParseException {
-        //Use Standard Analyzer for pre processing the text
         StandardAnalyzer analyzer = new StandardAnalyzer();
-        //create the index writer and set to use BM25Similarity
         BM25Similarity bm25 = new BM25Similarity();
-        IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        config.setSimilarity(bm25);
-        //our index we write entries to
-        Directory index = new RAMDirectory();
-        //init writer
-        IndexWriter w = new IndexWriter(index, config);
+        //create the index writer and set to use BM25Similarity and Standard Analyzer
+        Directory index = setUpIndex(analyzer, bm25);
 
-        //index the docs in the docsPath
-        File docDir = new File(docsPath);
-        indexDocs(w, docDir);
-        w.close();
 
         // 2. query
         String querystr = args.length > 0 ? args[0] : "copyright Valencia Oranges Grown in Arizona";
@@ -70,6 +60,34 @@ public class Main {
         reader.close();
     }
 
+    /**
+     * This method sets up the index and feeds it with content to be indexed
+     * @param analyzer the analyzer to be used to preprocess the data
+     * @param bm25 the similarity function to be used
+     * @return the collection of indexed entries
+     * @throws IOException shouldn't happen :)
+     */
+    static Directory setUpIndex(Analyzer analyzer, Similarity bm25) throws IOException {
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
+        config.setSimilarity(bm25);
+        //our index we write entries to
+        Directory index = new RAMDirectory();
+        //init writer
+        IndexWriter w = new IndexWriter(index, config);
+
+        //index the docs in the docsPath
+        File docDir = new File(docsPath);
+        indexDocs(w, docDir);
+        w.close();
+        return index;
+    }
+
+    /**
+     * Iterates through the TREC library folders and indexes everything
+     * @param writer allows us to write to the index
+     * @param file any directory or file in the TREC folders
+     * @throws IOException
+     */
     static void indexDocs(IndexWriter writer, File file)
             throws IOException {
         // do not try to index files that cannot be read
