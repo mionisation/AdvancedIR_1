@@ -17,33 +17,48 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.*;
-import java.util.HashMap;
+import java.util.TreeMap;
 
 public class Main {
     //path to the TREC library, take a small amount for testing purposes
     final static String docsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/fr94/01";
     final static String topicsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/topicsTREC8Adhoc.txt";
+    final static int hitsPerPage = 1000;
+
 
     public static void main(String[] args) throws IOException, ParseException {
         StandardAnalyzer analyzer = new StandardAnalyzer();
         BM25Similarity bm25 = new BM25Similarity();
-        //creates the index, sets up to use BM25Similarity
+        //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
         Directory index = setUpIndex(analyzer, bm25);
+        //2. parse the list of topics to be queried
+        TreeMap<String, String> topics = setUpTopicMap(topicsPath);
+        // 3. search for the topics in the index
+        searchForTopicsInIndex(index, topics, analyzer, bm25);
+    }
 
-        HashMap<String, String> topics = setUpTopicMap(topicsPath);
+    static void searchForTopicsInIndex(Directory index, TreeMap<String, String> topics, Analyzer analyzer, Similarity bm25) throws ParseException, IOException {
+        IndexReader reader = DirectoryReader.open(index);
+        IndexSearcher searcher = new IndexSearcher(reader);
+        searcher.setSimilarity(bm25);
+
+        //create ordered list out of keys
+        for(int i = 0; i < topics.size(); i++) {
+
+        }
+        System.out.println(topics.keySet());
+
+
         // 2. query
-        String querystr = args.length > 0 ? args[0] : "copyright Valencia Oranges Grown in Arizona";
+        String querystr = "copyright Valencia Oranges Grown in Arizona";
 
         // the "title" arg specifies the default field to use
         // when no field is explicitly specified in the query.
         Query q = new QueryParser("contents", analyzer).parse(querystr);
 
-        // 3. search
-        int hitsPerPage = 200;
-        IndexReader reader = DirectoryReader.open(index);
-        IndexSearcher searcher = new IndexSearcher(reader);
-        searcher.setSimilarity(bm25);
+
+
         TopDocs docs = searcher.search(q, hitsPerPage);
         ScoreDoc[] hits = docs.scoreDocs;
 
@@ -62,13 +77,13 @@ public class Main {
     }
 
     /**
-     * This method reads the topics file into a hashmap
+     * This method reads the topics file into a TreeMap (like a hashMap but sorted Keys)
      * @param topicsPath the path for the topicsTREC8Adhoc.txt
      * @return a map with all the topics, the topic number as key and topic title as value
      * @throws IOException
      */
-    static HashMap<String, String> setUpTopicMap(String topicsPath) throws IOException {
-        HashMap<String, String> topics = new HashMap<>();
+    static TreeMap<String, String> setUpTopicMap(String topicsPath) throws IOException {
+        TreeMap<String, String> topics = new TreeMap<>();
         BufferedReader br = new BufferedReader(new FileReader(topicsPath));
         String number = "default", title = "default";
         while(true) {
