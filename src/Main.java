@@ -16,21 +16,22 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.util.HashMap;
 
 public class Main {
     //path to the TREC library, take a small amount for testing purposes
     final static String docsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/fr94/01";
-    final static String topicsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/topicsTREC8Adhoc.txt";
+    final static String topicsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/topicsTREC8Adhoc.txt";
 
     public static void main(String[] args) throws IOException, ParseException {
         StandardAnalyzer analyzer = new StandardAnalyzer();
         BM25Similarity bm25 = new BM25Similarity();
-        //create the index writer and set to use BM25Similarity and Standard Analyzer
+        //creates the index, sets up to use BM25Similarity
+        // and Standard Analyzer and indexes TREC files
         Directory index = setUpIndex(analyzer, bm25);
 
-
+        HashMap<String, String> topics = setUpTopicMap(topicsPath);
         // 2. query
         String querystr = args.length > 0 ? args[0] : "copyright Valencia Oranges Grown in Arizona";
 
@@ -58,6 +59,31 @@ public class Main {
         // reader can only be closed when there
         // is no need to access the documents any more.
         reader.close();
+    }
+
+    /**
+     * This method reads the topics file into a hashmap
+     * @param topicsPath the path for the topicsTREC8Adhoc.txt
+     * @return a map with all the topics, the topic number as key and topic title as value
+     * @throws IOException
+     */
+    static HashMap<String, String> setUpTopicMap(String topicsPath) throws IOException {
+        HashMap<String, String> topics = new HashMap<>();
+        BufferedReader br = new BufferedReader(new FileReader(topicsPath));
+        String number = "default", title = "default";
+        while(true) {
+            String line = br.readLine();
+            if(line == null)
+                break;
+            if(line.startsWith("<num> Number: ")) {
+                number = line.substring(13);
+            }
+            if(line.startsWith("<title> ")) {
+                title = line.substring(7);
+                topics.put(number, title);
+            }
+        }
+        return topics;
     }
 
     /**
