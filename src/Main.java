@@ -41,6 +41,15 @@ public class Main {
         searchForTopicsInIndex(index, topics, analyzer, bm25);
     }
 
+    /**
+     * This method executes all the queries we specified on the index
+     * @param index the index in which we want to search for
+     * @param topics the topics we want to use as search terms
+     * @param analyzer the preprocessor used
+     * @param bm25 the similarity measure used
+     * @throws ParseException
+     * @throws IOException
+     */
     static void searchForTopicsInIndex(Directory index, TreeMap<String, String> topics, Analyzer analyzer, Similarity bm25) throws ParseException, IOException {
         IndexReader reader = DirectoryReader.open(index);
         IndexSearcher searcher = new IndexSearcher(reader);
@@ -48,17 +57,18 @@ public class Main {
 
         //create ordered list out of keys
         for(String key : topics.keySet()) {
-            // create. query
+            // create specific query
             String querystr = topics.get(key);
 
             // the "title" arg specifies the default field to use
             // when no field is explicitly specified in the query.
             Query q = new QueryParser("contents", analyzer).parse(querystr);
-
+            //execute query
             TopDocs docs = searcher.search(q, hitsPerPage);
+            //number of hits
             ScoreDoc[] hits = docs.scoreDocs;
 
-            // 4. display results
+            // display results
             if(debugOutput)
                 System.out.println("Found " + hits.length + " hits for topic no. " + key + " - " + topics.get(key));
             for(int i=0;i<hits.length;++i) {
@@ -66,7 +76,7 @@ public class Main {
                 float score = hits[i].score;
                 Document d = searcher.doc(docId);
                 if(debugOutput)
-                    System.out.println("Q0" + " " + d.get("docno") + " " + (i + 1) +  " " + score );
+                    System.out.println(key + "Q0" + " " + d.get("docno") + " " + (i + 1) +  " " + score );
             }
         }
 
