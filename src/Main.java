@@ -24,7 +24,7 @@ public class Main {
     final static String docsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/fr94/01";
     final static String topicsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/topicsTREC8Adhoc.txt";
     final static int hitsPerPage = 1000;
-
+    final static boolean debugOutput = true;
 
     public static void main(String[] args) throws IOException, ParseException {
         StandardAnalyzer analyzer = new StandardAnalyzer();
@@ -44,31 +44,27 @@ public class Main {
         searcher.setSimilarity(bm25);
 
         //create ordered list out of keys
-        for(int i = 0; i < topics.size(); i++) {
+        for(String key : topics.keySet()) {
+            // create. query
+            String querystr = topics.get(key);
 
-        }
-        System.out.println(topics.keySet());
+            // the "title" arg specifies the default field to use
+            // when no field is explicitly specified in the query.
+            Query q = new QueryParser("contents", analyzer).parse(querystr);
+            
+            TopDocs docs = searcher.search(q, hitsPerPage);
+            ScoreDoc[] hits = docs.scoreDocs;
 
-
-        // 2. query
-        String querystr = "copyright Valencia Oranges Grown in Arizona";
-
-        // the "title" arg specifies the default field to use
-        // when no field is explicitly specified in the query.
-        Query q = new QueryParser("contents", analyzer).parse(querystr);
-
-
-
-        TopDocs docs = searcher.search(q, hitsPerPage);
-        ScoreDoc[] hits = docs.scoreDocs;
-
-        // 4. display results
-        System.out.println("Found " + hits.length + " hits.");
-        for(int i=0;i<hits.length;++i) {
-            int docId = hits[i].doc;
-            float score = hits[i].score;
-            Document d = searcher.doc(docId);
-            System.out.println("Q0" + " " + d.get("docno") + " " + (i + 1) +  " " + score );
+            // 4. display results
+            if(debugOutput)
+                System.out.println("Found " + hits.length + " hits for topic no. " + key + " - " + topics.get(key));
+            for(int i=0;i<hits.length;++i) {
+                int docId = hits[i].doc;
+                float score = hits[i].score;
+                Document d = searcher.doc(docId);
+                if(debugOutput)
+                    System.out.println("Q0" + " " + d.get("docno") + " " + (i + 1) +  " " + score );
+            }
         }
 
         // reader can only be closed when there

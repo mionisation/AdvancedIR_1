@@ -22,7 +22,8 @@ public class TrecDocIterator implements Iterator<Document> {
 
     public TrecDocIterator(File file) throws FileNotFoundException {
         rdr = new BufferedReader(new FileReader(file));
-        System.out.println("Reading " + file.toString());
+        if(Main.debugOutput)
+            System.out.println("Reading " + file.toString());
     }
 
     @Override
