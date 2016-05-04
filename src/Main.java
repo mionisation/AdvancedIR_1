@@ -17,16 +17,19 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.*;
+import java.util.Properties;
 import java.util.TreeMap;
 
 public class Main {
     //path to the TREC library, take a small amount for testing purposes
-    final static String docsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/Adhoc/fr94/01";
-    final static String topicsPath = "/home/mionisation/Dropbox/UNI SS 2016/InformationRetrievalVU/Exercise/Exercise0data/topicsTREC8Adhoc.txt";
+    private static String docsPath;
+    private static String topicsPath;
     final static int hitsPerPage = 1000;
     final static boolean debugOutput = true;
 
     public static void main(String[] args) throws IOException, ParseException {
+        loadProperties();
+
         StandardAnalyzer analyzer = new StandardAnalyzer();
         BM25Similarity bm25 = new BM25Similarity();
         //1. creates the index, sets up to use BM25Similarity
@@ -51,7 +54,7 @@ public class Main {
             // the "title" arg specifies the default field to use
             // when no field is explicitly specified in the query.
             Query q = new QueryParser("contents", analyzer).parse(querystr);
-            
+
             TopDocs docs = searcher.search(q, hitsPerPage);
             ScoreDoc[] hits = docs.scoreDocs;
 
@@ -146,6 +149,21 @@ public class Main {
                         writer.addDocument(doc);
                 }
             }
+        }
+    }
+
+    static void loadProperties() {
+        File configFile = new File("config.properties");
+        try {
+            FileReader reader = new FileReader(configFile);
+            Properties props = new Properties();
+            props.load(reader);
+            docsPath = props.getProperty("docs");
+            topicsPath = props.getProperty("topics");
+        } catch (FileNotFoundException ex) {
+            // file does not exist
+        } catch (IOException ex) {
+            // I/O error
         }
     }
 }
