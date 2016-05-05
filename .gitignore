@@ -1,4 +1,9 @@
 
+# Custom
+config.properties
+/target/
+
+
 # Created by https://www.gitignore.io/api/intellij
 
 ### Intellij ###
