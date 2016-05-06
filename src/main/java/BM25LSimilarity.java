@@ -267,7 +267,7 @@ public class BM25LSimilarity extends Similarity {
             //norm = cachePrime
             float norm = norms == null ? k1 : cache[(byte) norms.get(doc) & 0xFF];
             //return weightValue * freq / (freq + norm);
-            //norm = cachePrime;
+            //norm = cachePrime = B = (1 - b) + b (lengthOfDoc / avgdl);
             float freqPrime = freq / norm; //freqPrime = c'(q,D)
             if ((freqPrime) > 0)
                 return (weightValue * freqPrime + delta) / (k1 + (freqPrime + delta));
