@@ -31,7 +31,7 @@ public class Main {
         loadProperties();
 
         StandardAnalyzer analyzer = new StandardAnalyzer();
-        BM25Similarity bm25 = new BM25Similarity();
+        BM25LSimilarity bm25 = new BM25LSimilarity();
         //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
         Directory index = setUpIndex(analyzer, bm25);

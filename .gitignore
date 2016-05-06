@@ -1,7 +1,7 @@
 
 # Custom
 config.properties
-/target/
+target/**
 
 
 # Created by https://www.gitignore.io/api/intellij
