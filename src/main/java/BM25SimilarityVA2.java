@@ -212,7 +212,14 @@ public class BM25SimilarityVA2 extends Similarity {
     float avgdl = avgFieldLength(collectionStats);
 
     float mavgtf = 0.0f; //TODO mean average term frequency, should be 1/|D| * sum of (d in D) Ld/|Td|
-    float Td = 0.0f; //TODO number of unique terms in document d
+
+    //CHANGE: add the occurence of unique terms
+    float Td = 0.0f;
+    for (final TermStatistics stat : termStats) {
+      if(stat.totalTermFreq() == 1) {
+        Td++;
+      }
+    }
 
     // compute freq-independent part of bm25 equation across all norm values
     float cache[] = new float[256];
