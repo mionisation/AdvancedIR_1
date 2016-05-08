@@ -153,8 +153,9 @@ public class Main {
                 Document doc;
                 while (docs.hasNext()) {
                     doc = docs.next();
-                    if (doc != null && doc.getField("contents") != null)
+                    if (doc != null && doc.getField("contents") != null) {
                         writer.addDocument(doc);
+                    }
                 }
             }
         }

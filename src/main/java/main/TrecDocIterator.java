@@ -9,10 +9,8 @@ import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexOptions;
 
 /**
  * Taken from https://github.com/isoboroff/trec-demo/blob/master/src/TrecDocIterator.java
@@ -67,8 +65,16 @@ public class TrecDocIterator implements Iterator<Document> {
 
                 sb.append(line);
             }
-            if (sb.length() > 0)
-                doc.add(new TextField("contents", sb.toString(), Field.Store.NO));
+            if (sb.length() > 0){
+                FieldType type = new FieldType();
+                type.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+                type.setTokenized(true);
+                type.setStored(false);
+                type.setStoreTermVectors(true);
+                type.setStoreTermVectorPositions(true);
+                type.freeze();
+                doc.add(new Field("contents", sb.toString(), type));
+            }
 
         } catch (IOException e) {
             doc = null;

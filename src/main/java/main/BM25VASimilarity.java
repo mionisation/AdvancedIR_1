@@ -234,9 +234,6 @@ public class BM25VASimilarity extends Similarity {
 
         float avgdl = avgFieldLength(collectionStats);
 
-        float mavgtf = 0.0f; //TODO mean average term frequency, should be 1/|D| * sum of (d in D) Ld/|Td|
-        float Td = 0.0f; //TODO number of unique terms in document d
-
         // compute freq-independent part of bm25 equation across all norm values
         float cache[] = new float[256];
         for (int i = 0; i < cache.length; i++) {
@@ -260,64 +257,72 @@ public class BM25VASimilarity extends Similarity {
         LeafReader reader = context.reader();
         //int docCount = reader.getDocCount(bm25stats.field);
 
-        Fields fields = MultiFields.getFields(reader);
-
-
-        //an array containing the TermVectors for each document
-        //using terms.size() returns Td, the number of unique terms in the doc.
-        ArrayList<Terms> uniqueDocTerms = new ArrayList<Terms>();
-        float[] averageTermFrequencyList = new float[reader.maxDoc()];
+        //BVA calculated for each document
+        float[] BVA = new float[reader.maxDoc()];
         float sumOfAverageTermFrequencies = 0.0f;
+
+        //length of each doc
+        float[] Ld = new float[reader.maxDoc()];
+        //the number of unique terms in the doc.
+        float[] Td = new float[reader.maxDoc()];
 
         NumericDocValues norms = reader.getNormValues(bm25stats.field);
 
-        int nulldocs = 0;
+//        int nulldocs = 0;
         for (int i = 0; i < reader.maxDoc(); i++){
             Terms terms = reader.getTermVector(i, bm25stats.field);
-            uniqueDocTerms.add(terms);
             //norm should be the decoded length of doc d, Ld.
             float norm = norms == null ? k1 : bm25stats.cache[(byte) norms.get(i) & 0xFF];
-            float Ld = norm;
-            if (terms == null) {
-                nulldocs++;
-                continue;
-            }
-            averageTermFrequencyList[i] = Ld/terms.size();
-            sumOfAverageTermFrequencies += averageTermFrequencyList[i];
+            Ld[i] = norm;
+            //using terms.size() returns Td, the number of unique terms in the doc.
+            Td[i] = terms.size();
+//            if (terms == null) {
+//                nulldocs++;
+//                continue;
+//            }
+
+            float averageTermFrequency = Ld[i]/Td[i];
+            sumOfAverageTermFrequencies += averageTermFrequency;
         }
-        float mavgtf = 1/reader.maxDoc()*sumOfAverageTermFrequencies;
-        System.out.println("Null docs: "+nulldocs);
-        System.out.println("Max docs: "+reader.maxDoc());
-        System.out.println("Doc count: "+reader.getDocCount(bm25stats.field));
-        System.out.println("max docs minus null docs: "+(reader.maxDoc() - nulldocs));
-        reader.terms(bm25stats.field);
-        System.exit(1);
-        return new BM25DocScorer(bm25stats, norms);
+        //calculate mean average term frequency of all documents
+        float mavgtf = sumOfAverageTermFrequencies/reader.maxDoc();
+
+        //calculate B_VA for each document
+        for (int i = 0; i < reader.maxDoc(); i++){
+            BVA[i] = 1/(mavgtf*mavgtf)*Ld[i]/Td[i]+(1 - 1/mavgtf)*Ld[i]/bm25stats.avgdl;
+        }
+
+//        System.out.println("Null docs: "+nulldocs);
+//        System.out.println("Max docs: "+reader.maxDoc());
+//        System.out.println("Doc count: "+reader.getDocCount(bm25stats.field));
+//        System.out.println("max docs minus null docs: "+(reader.maxDoc() - nulldocs));
+
+        return new BM25DocScorer(bm25stats, BVA);
     }
 
     private class BM25DocScorer extends SimScorer {
         private final BM25Stats stats;
         private final float weightValue; // boost * idf * (k1 + 1)
-        private final NumericDocValues norms;
+        private final float[] BVA;
         private final float[] cache;
 
-        BM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
+        BM25DocScorer(BM25Stats stats, float[] BVA) throws IOException {
             this.stats = stats;
             this.weightValue = stats.weight * (k1 + 1);
             this.cache = stats.cache;
-            this.norms = norms;
+            this.BVA = BVA;
         }
 
         @Override
         public float score(int doc, float freq) {
             // if there are no norms, we act as if b=0
-            float norm = norms == null ? k1 : cache[(byte) norms.get(doc) & 0xFF];
-            return weightValue * freq / (freq + norm);
+            //float norm = norms == null ? k1 : cache[(byte) norms.get(doc) & 0xFF];
+            return weightValue * freq / (freq + k1 * BVA[doc]);
         }
 
         @Override
         public Explanation explain(int doc, Explanation freq) {
-            return explainScore(doc, freq, stats, norms);
+            return explainScore(doc, freq, stats, null);
         }
 
         @Override
