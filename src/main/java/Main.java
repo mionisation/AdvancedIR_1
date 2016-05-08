@@ -11,7 +11,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -31,7 +30,7 @@ public class Main {
         loadProperties();
 
         StandardAnalyzer analyzer = new StandardAnalyzer();
-        BM25LSimilarity bm25 = new BM25LSimilarity();
+        BM25SimilarityVA2 bm25 = new BM25SimilarityVA2();
         //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
         Directory index = setUpIndex(analyzer, bm25);
