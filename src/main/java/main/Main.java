@@ -1,10 +1,9 @@
+package main;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -30,7 +29,7 @@ public class Main {
         loadProperties();
 
         StandardAnalyzer analyzer = new StandardAnalyzer();
-        BM25SimilarityVA2 bm25 = new BM25SimilarityVA2();
+        BM25VASimilarity bm25 = new BM25VASimilarity();
         //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
         Directory index = setUpIndex(analyzer, bm25);

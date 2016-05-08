@@ -1,4 +1,4 @@
-/*
+package main;/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,7 +16,9 @@
  */
 
 
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -35,7 +37,7 @@ import java.util.List;
  * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
  */
-public class BM25VASimilarity extends Similarity {
+public class BM25LSimilarity extends Similarity {
     private final float k1;
     private final float b;
     private final float delta;
@@ -48,7 +50,7 @@ public class BM25VASimilarity extends Similarity {
      * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
      *                                  not within the range {@code [0..1]}
      */
-    public BM25VASimilarity(float k1, float b, float delta) {
+    public BM25LSimilarity(float k1, float b, float delta) {
         if (Float.isFinite(k1) == false || k1 < 0) {
             throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
         }
@@ -67,7 +69,7 @@ public class BM25VASimilarity extends Similarity {
      * <li>{@code b = 0.75}</li>
      * </ul>
      */
-    public BM25VASimilarity() {
+    public BM25LSimilarity() {
         this(1.2f, 0.75f, 0.5f);
     }
 
@@ -230,18 +232,12 @@ public class BM25VASimilarity extends Similarity {
 
         float avgdl = avgFieldLength(collectionStats);
 
-        float mavgtf = 0.0f; //TODO mean average term frequency, should be 1/|D| * sum of (d in D) Ld/|Td|
-        float Td = 0.0f; //TODO number of unique terms in document d
-
         // compute freq-independent part of bm25 equation across all norm values
         float cache[] = new float[256];
         for (int i = 0; i < cache.length; i++) {
             //cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte) i) / avgdl);
-            //cache becomes cachePrime = B
-            //cache[i] = ((1 - b) + b * decodeNormValue((byte) i) / avgdl);
-            // B_VA
-            cache[i] = (1/(mavgtf * mavgtf) * decodeNormValue((byte) i) / Td) +
-                    ((1 - 1/mavgtf)*decodeNormValue((byte) i) / avgdl);
+            //cache becomes cachePrime
+            cache[i] = ((1 - b) + b * decodeNormValue((byte) i) / avgdl);
         }
         return new BM25Stats(collectionStats.field(), idf, avgdl, cache);
     }
@@ -249,13 +245,7 @@ public class BM25VASimilarity extends Similarity {
     @Override
     public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
         BM25Stats bm25stats = (BM25Stats) stats;
-        LeafReader reader = context.reader();
-        int docCount = reader.getDocCount(bm25stats.field);
-        for (int i = 0; i < reader.maxDoc(); i++){
-            Terms terms = reader.getTermVector(i, bm25stats.field);
-            terms.size();
-        }
-        return new BM25DocScorer(bm25stats, reader.getNormValues(bm25stats.field));
+        return new BM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
     }
 
     private class BM25DocScorer extends SimScorer {
@@ -278,7 +268,6 @@ public class BM25VASimilarity extends Similarity {
             float norm = norms == null ? k1 : cache[(byte) norms.get(doc) & 0xFF];
             //return weightValue * freq / (freq + norm);
             //norm = cachePrime = B = (1 - b) + b (lengthOfDoc / avgdl);
-            //TODO check and compare BM25L with BM25VA equations
             float freqPrime = freq / norm; //freqPrime = c'(q,D)
             if ((freqPrime) > 0)
                 return (weightValue * freqPrime + delta) / (k1 + (freqPrime + delta));
@@ -394,7 +383,7 @@ public class BM25VASimilarity extends Similarity {
     /**
      * Returns the <code>k1</code> parameter
      *
-     * @see #BM25VASimilarity(float, float, float)
+     * @see #BM25LSimilarity(float, float, float)
      */
     public final float getK1() {
         return k1;
@@ -403,7 +392,7 @@ public class BM25VASimilarity extends Similarity {
     /**
      * Returns the <code>b</code> parameter
      *
-     * @see #BM25VASimilarity(float, float, float)
+     * @see #BM25LSimilarity(float, float, float)
      */
     public final float getB() {
         return b;
@@ -412,7 +401,7 @@ public class BM25VASimilarity extends Similarity {
     /**
      * Returns the <code>delta</code> parameter
      *
-     * @see #BM25VASimilarity(float, float, float)
+     * @see #BM25LSimilarity(float, float, float)
      */
     public final float getDelta() {
         return delta;
