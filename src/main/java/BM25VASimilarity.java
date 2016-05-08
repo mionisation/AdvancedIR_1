@@ -16,9 +16,7 @@
  */
 
 
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -251,7 +249,13 @@ public class BM25VASimilarity extends Similarity {
     @Override
     public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
         BM25Stats bm25stats = (BM25Stats) stats;
-        return new BM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
+        LeafReader reader = context.reader();
+        int docCount = reader.getDocCount(bm25stats.field);
+        for (int i = 0; i < reader.maxDoc(); i++){
+            Terms terms = reader.getTermVector(i, bm25stats.field);
+            terms.size();
+        }
+        return new BM25DocScorer(bm25stats, reader.getNormValues(bm25stats.field));
     }
 
     private class BM25DocScorer extends SimScorer {
