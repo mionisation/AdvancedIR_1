@@ -12,9 +12,11 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.TreeMap;
 
@@ -22,6 +24,8 @@ public class Main {
     //path to the TREC library, take a small amount for testing purposes
     private static String docsPath;
     private static String topicsPath;
+    private static String indexPath;
+    private static String setupIndex;
     final static int hitsPerPage = 1000;
     final static boolean debugOutput = true;
 
@@ -32,23 +36,26 @@ public class Main {
         BM25VASimilarity bm25 = new BM25VASimilarity();
         //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
-        Directory index = setUpIndex(analyzer, bm25);
+        if(setupIndex.equals("true")) {
+            Directory index = setUpIndex(analyzer, bm25);
+        }
         //2. parse the list of topics to be queried
         TreeMap<String, String> topics = setUpTopicMap(topicsPath);
         // 3. search for the topics in the index
-        searchForTopicsInIndex(index, topics, analyzer, bm25);
+        searchForTopicsInIndex(topics, analyzer, bm25);
     }
 
     /**
      * This method executes all the queries we specified on the index
-     * @param index the index in which we want to search for
      * @param topics the topics we want to use as search terms
      * @param analyzer the preprocessor used
      * @param bm25 the similarity measure used
      * @throws ParseException
      * @throws IOException
      */
-    static void searchForTopicsInIndex(Directory index, TreeMap<String, String> topics, Analyzer analyzer, Similarity bm25) throws ParseException, IOException {
+    static void searchForTopicsInIndex(TreeMap<String, String> topics, Analyzer analyzer, Similarity bm25) throws ParseException, IOException {
+        //path to index is opened
+        Directory index = FSDirectory.open(new File(indexPath).toPath());
         IndexReader reader = DirectoryReader.open(index);
         IndexSearcher searcher = new IndexSearcher(reader);
         searcher.setSimilarity(bm25);
@@ -118,8 +125,8 @@ public class Main {
     static Directory setUpIndex(Analyzer analyzer, Similarity bm25) throws IOException {
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         config.setSimilarity(bm25);
-        //our index we write entries to
-        Directory index = new RAMDirectory();
+        //our index we write entries to, is on file system
+        FSDirectory index = FSDirectory.open(new File(indexPath).toPath());
         //init writer
         IndexWriter w = new IndexWriter(index, config);
 
@@ -169,6 +176,8 @@ public class Main {
             props.load(reader);
             docsPath = props.getProperty("docs");
             topicsPath = props.getProperty("topics");
+            indexPath = props.getProperty("index");
+            setupIndex = props.getProperty("setupIndex");
         } catch (FileNotFoundException ex) {
             // file does not exist
         } catch (IOException ex) {
