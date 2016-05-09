@@ -1,0 +1,14 @@
+To execute this, you need to specify a config.properties file in the main folder:
+The parameters to be specified are "docs", "topics", "index", "setupIndex" and "similarity"
+Description of the parameters and example values:
+
+#This is the path to the TREC collection of documents. You can select a subset for testing purposes
+docs = /your/document/directory/
+#This is the path to the txt file containing the topics to be queried for
+topics = /path/topicsTREC8Adhoc.txt
+#This is the path where we want to build the index on the file system
+index = /IR_INDEX/
+#This determines if we want to re-index our documents or not: If yes, it must be to "true"; if not, any other value suffices
+setupIndex = true
+#Which similarity we want to use: BM25VA if value = "VA", BM25 if any other value
+similarity = VA
