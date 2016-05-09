@@ -11,11 +11,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -39,19 +42,25 @@ public class Main {
         //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
         if(setupIndex.equals("true")) {
-            Directory index = setUpIndex(analyzer, bm25);
+            setUpIndex(analyzer, bm25);
         }
         //2. parse the list of topics to be queried
         TreeMap<String, String> topics = setUpTopicMap(topicsPath);
         // 3. search for the topics in the index
+        //delete the results File for new run
+        new File("resultsFile" + similarity).delete();
         searchForTopicsInIndex(topics, analyzer, bm25);
     }
 
     public static Similarity getSimilarity() {
         if(similarity.equals("VA")) {
             return new BM25VASimilarity();
-        } else {
+        } else if(similarity.equals("ORIGINAL")) {
+            System.out.println("Use BM 25 Original Similarity");
             return new BM25SimilarityOriginal();
+        } else {
+            System.out.println("Use Lucene default Similarity");
+            return null;
         }
     }
 
@@ -69,8 +78,9 @@ public class Main {
         Directory index = FSDirectory.open(new File(indexPath).toPath());
         IndexReader reader = DirectoryReader.open(index);
         IndexSearcher searcher = new IndexSearcher(reader);
-        searcher.setSimilarity(bm25);
-
+        if(bm25 != null) {
+            searcher.setSimilarity(bm25);
+        }
         //create ordered list out of keys
         for(String key : topics.keySet()) {
             // create specific query
@@ -85,14 +95,20 @@ public class Main {
             ScoreDoc[] hits = docs.scoreDocs;
 
             // display results
-            if(debugOutput)
+            if(debugOutput) {
                 System.out.println("Found " + hits.length + " hits for topic no. " + key + " - " + topics.get(key));
+            }
             for(int i=0;i<hits.length;++i) {
                 int docId = hits[i].doc;
                 float score = hits[i].score;
                 Document d = searcher.doc(docId);
-                if(debugOutput)
-                    System.out.println(key + "Q0" + " " + d.get("docno") + " " + (i + 1) +  " " + score );
+                String result = key + " Q0" + " " + d.get("docno") + " " + (i + 1) +  " " + score + " grp2-" + similarity;
+                if(debugOutput) {
+                    System.out.println(result);
+                }
+                File file = new File("resultsFile" + similarity);
+                FileUtils.writeStringToFile(file, result + "\n", Charset.defaultCharset(), true);
+
             }
         }
 
@@ -135,7 +151,9 @@ public class Main {
      */
     static Directory setUpIndex(Analyzer analyzer, Similarity bm25) throws IOException {
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        config.setSimilarity(bm25);
+        if(bm25 != null) {
+            config.setSimilarity(bm25);
+        }
         //our index we write entries to, is on file system
         FSDirectory index = FSDirectory.open(new File(indexPath).toPath());
         //init writer
@@ -192,8 +210,10 @@ public class Main {
             indexPath = props.getProperty("index");
             if(similarity.equals("VA")) {
                 indexPath += "VA/";
+            } else if(similarity.equals("ORIGINAL")){
+                indexPath += "ORIGINAL/";
             } else {
-                indexPath += "Original/";
+                indexPath += "default/";
             }
 
         } catch (FileNotFoundException ex) {

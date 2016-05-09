@@ -11,5 +11,5 @@ index = /IR_INDEX/
 #This determines if we want to re-index our documents or not: If yes, it must be to "true"; if not, any other value suffices
 #Should be true if change of similarity
 setupIndex = true
-#Which similarity we want to use: BM25VA if value = "VA", BM25 if any other value
+#Which similarity we want to use: BM25VA if value = "VA", BM25 if "ORIGINAL", default if any other
 similarity = VA
