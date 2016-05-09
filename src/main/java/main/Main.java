@@ -26,6 +26,7 @@ public class Main {
     private static String topicsPath;
     private static String indexPath;
     private static String setupIndex;
+    private static String similarity;
     final static int hitsPerPage = 1000;
     final static boolean debugOutput = true;
 
@@ -33,7 +34,8 @@ public class Main {
         loadProperties();
 
         StandardAnalyzer analyzer = new StandardAnalyzer();
-        BM25VASimilarity bm25 = new BM25VASimilarity();
+        Similarity bm25 = getSimilarity();
+
         //1. creates the index, sets up to use BM25Similarity
         // and Standard Analyzer and indexes TREC files
         if(setupIndex.equals("true")) {
@@ -44,6 +46,15 @@ public class Main {
         // 3. search for the topics in the index
         searchForTopicsInIndex(topics, analyzer, bm25);
     }
+
+    public static Similarity getSimilarity() {
+        if(similarity.equals("VA")) {
+            return new BM25VASimilarity();
+        } else {
+            return new BM25SimilarityOriginal();
+        }
+    }
+
 
     /**
      * This method executes all the queries we specified on the index
@@ -176,8 +187,15 @@ public class Main {
             props.load(reader);
             docsPath = props.getProperty("docs");
             topicsPath = props.getProperty("topics");
-            indexPath = props.getProperty("index");
             setupIndex = props.getProperty("setupIndex");
+            similarity = props.getProperty("similarity");
+            indexPath = props.getProperty("index");
+            if(similarity.equals("VA")) {
+                indexPath += "VA/";
+            } else {
+                indexPath += "Original/";
+            }
+
         } catch (FileNotFoundException ex) {
             // file does not exist
         } catch (IOException ex) {
